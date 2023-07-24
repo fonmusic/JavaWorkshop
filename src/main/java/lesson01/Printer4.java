@@ -2,80 +2,90 @@ package lesson01;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Printer4 {
     public static void main(String[] args) {
-        String file = "";
-
-        if (args.length == 0) {
-            file = "input.txt";
-        } else {
-            file = args[0];
-        }
-
-        Equation eq = new Equation();
-        String result = eq.getSolution(file);
+        Equation equation = new Equation();
+        String result = equation.getSolution("input.txt");
         System.out.println(result);
     }
 }
 
 class Equation {
-    public String getSolution(String str) {
-        try (BufferedReader br = new BufferedReader(new FileReader(str))) {
-            String equation = br.readLine();
+    public static String getSolution(String str) {
 
-            // Разделяем уравнение на левую и правую части
-            String[] parts = equation.split("=");
-            String left = parts[0].trim();
-            String right = parts[1].trim();
+        String equation = readFromFile(str);
+        String result = "Given the equation: " + equation + "\n";
+        String solution = getOneSolution(equation);
+        if (solution == "") {
+            result += "No solution\n";
+        } else {
+            result += "Result: " + solution + "\n";
+        }
+        return  result;
+    }
 
-            // Находим индексы вопросительных знаков в левой и правой части
-            List<Integer> leftQuestionMarks = findQuestionMarks(left);
-            List<Integer> rightQuestionMarks = findQuestionMarks(right);
-
-            // Перебираем все возможные значения для вопросительных знаков
-            for (int i = 0; i <= 9; i++) {
-                for (int j = 0; j <= 9; j++) {
-                    // Формируем выражение, подставляя значения для вопросительных знаков
-                    String replacedLeft = replaceQuestionMarks(left, leftQuestionMarks, i);
-                    String replacedRight = replaceQuestionMarks(right, rightQuestionMarks, j);
-
-                    // Вычисляем результат
-                    int leftValue = Integer.parseInt(replacedLeft);
-                    int rightValue = Integer.parseInt(replacedRight);
-
-                    // Если уравнение верно, возвращаем результат
-                    if (leftValue + rightValue == Integer.parseInt(right)) {
-                        return "Given the equation: " + equation + "\nResult: " + replacedLeft + " = " + replacedRight;
+    public static String getOneSolution(String str) {
+        String[] tmp1 = str.split("[+=]");
+        for (int d1: getDigits(tmp1[0].trim())) {
+            for (int d2: getDigits(tmp1[1].trim())) {
+                for (int res: getDigits(tmp1[2].trim())) {
+                    if (d1 + d2 == res) {
+                        return d1 + " + " + d2 + " = " + res;
                     }
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-
-        return "No solution";
+        return "";
     }
-    // Метод для поиска индексов вопросительных знаков в строке
-    private static List<Integer> findQuestionMarks(String str) {
-        List<Integer> questionMarks = new ArrayList<>();
+
+    public static String readFromFile(String path){
+        String str = "";
+        try (FileReader fr = new FileReader(path)) {
+            BufferedReader br = new BufferedReader(fr);
+            str = br.readLine();
+            br.close();
+        }
+        catch (Exception ex) {
+            System.out.println(ex.getMessage());
+        }
+        return  str;
+
+    }
+
+    public static int[] getDigits(String str) {
+        int[] result;
+        if (!str.contains("?")) {
+            result = new int[1];
+            result[0] = Integer.parseInt(str);
+            return result;
+        }
+        int countNone = 1;
         for (int i = 0; i < str.length(); i++) {
             if (str.charAt(i) == '?') {
-                questionMarks.add(i);
+                countNone *= 10;
             }
         }
-        return questionMarks;
-    }
-
-    // Метод для замены вопросительных знаков на заданное значение
-    private static String replaceQuestionMarks(String str, List<Integer> questionMarks, int value) {
-        StringBuilder result = new StringBuilder(str);
-        for (int index : questionMarks) {
-            result.replace(index, index + 1, Integer.toString(value).trim());
+        result = new int[countNone];
+        int index = 0;
+        String tempNumber;
+        int indexNone = str.indexOf("?");
+        int[] tempArray;
+        for (int j = 0; j < 10; j++) {
+            if (indexNone == 0) {
+                tempNumber = j + str.substring(1);
+            } else if ((indexNone + 1) == str.length()) {
+                tempNumber = str.substring(0, str.length() - 1) + j;
+            } else {
+                tempNumber = str.substring(0, indexNone) + j + str.substring(indexNone + 1);
+            }
+            tempArray = getDigits(tempNumber);
+            for (int item : tempArray) {
+                result[index] = item;
+                index++;
+            }
         }
-        return result.toString();
+
+        return result;
     }
 }
